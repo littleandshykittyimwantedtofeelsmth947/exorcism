@@ -13,7 +13,7 @@ from uuid import uuid4
 import random
 
 BASE_URL = "https://mailer.hype-interface.com"
-API_KEY = "b01f29d75cc4a74a9a55ff02ce5adb78"
+API_KEY = "123"
 TEMPLATE = "20"             
 CONCURRENCY = 3000           
 DELAY_SECONDS = 0           
