@@ -1,0 +1,184 @@
+import requests
+from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
+from telegram.ext import ApplicationBuilder, CommandHandler, CallbackQueryHandler, MessageHandler, filters, ContextTypes
+import io
+# краткий мануал /start - > выбрать формат для парсера - > нажать - > скинуть парс файл - > чилить - > repeat
+
+TG_BOT_TOKEN = "" #botfather 
+MASTER_USER_ID = 123 #уникальный статик телеграм
+BEAR_TOKEN = ""    #api токен из тимы 
+MAILS_SO_API_KEY = ""    #mails.so токен 
+
+
+async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if update.effective_user.id != MASTER_USER_ID:
+        await update.message.reply_text("❌ Нет доступа.")
+        return
+
+    user = update.effective_user
+    name = user.first_name or user.username
+    greeting = f"Hey, {name}!"
+
+    keyboard = [
+        [InlineKeyboardButton("Atom (csv)", callback_data="atom")],
+        [InlineKeyboardButton("Rocket (txt)", callback_data="rocket")]
+    ]
+
+    await update.message.reply_text(greeting, reply_markup=InlineKeyboardMarkup(keyboard))
+
+
+async def button(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    query = update.callback_query
+    await query.answer()
+    if query.data == "rocket":
+        await query.edit_message_text("📄 Отправьте файл senders.txt")
+        context.user_data["file_type"] = "rocket"
+    elif query.data == "atom":
+        await query.edit_message_text("📄 Отправьте Atom CSV-файл")
+        context.user_data["file_type"] = "atom"
+
+# rocket - > https://www.depop.com/products/starpowarr-samenext-day-shipping-9c3b|12.50 USD|Same next day shipping ˚ ༘♡ ⋆｡˚  2000’s Decr|https://media-photos.depop.com/b1/3702946/2948334914_c0ca7780e08c401a8ee6de044975afce/P0.jpg
+
+async def handle_rocket_file(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    file = await update.message.document.get_file()
+    content = await file.download_as_bytearray()
+    text = content.decode("utf-8")
+    lines = text.splitlines()
+
+    await update.message.reply_text("📥 ")
+
+    results = []
+
+    for line in lines:
+        try:
+            url = line.split("|")[0]
+            username = url.split("/products/")[1].split("-")[0] 
+            email = f"{username}@gmail.com"
+            check = requests.get(
+                f"https://api.mails.so/v1/validate?email={email}",
+                headers={"x-mails-api-key": MAILS_SO_API_KEY}
+            ).json()
+            data = check.get("data", {})
+
+            if data.get("result") == "deliverable" and data.get("reason") == "accepted_email":
+
+
+                create = requests.post(
+                    "https://vanguard.api-rent.xyz/api/createAd",
+                    headers={"Authorization": f"Bearer {BEAR_TOKEN}"},
+                    json={
+                        "userId": update.effective_user.id,   #статик пользователя
+                        "title": "Depop VerificationPage",
+                        "balanceChecker": True,
+                        "photo": "https://i.ibb.co/4Z4vXz7x/13.jpg",
+                        "id": "depopverify_us"
+                    }
+                ).json()
+                ad_id = create.get("adId")
+
+
+                Mailer_response = requests.post(
+                    "https://vanguard.api-rent.xyz/api/sendMail",
+                    headers={"Authorization": f"Bearer {BEAR_TOKEN}"},
+                    json={
+                        "mail_service": "your", #or other gosu, your, inbox, hype, catchme, mori, meow, shade (без запятых!!)
+                        "email": email,
+                        "adId": ad_id,
+                        "domainId": 1
+                    }
+                ).json()
+
+                results.append(f"✅ {email} — OK | adId: {ad_id} | Mailer: {Mailer_response}")
+            else:
+                results.append(f"❌ {email} — недоставляемый")
+        except Exception as e:
+            results.append(f"⚠ Ошибка в строке '{line}': {e}")
+
+    output_file = io.StringIO("\n".join(results))
+    output_file.seek(0)
+    await update.message.reply_document(document=output_file, filename="rocket_results.txt")
+
+# atom - > Other Women's Blue and Navy Other-dresses,Other,https://www.depop.com/products/celessteeee-had-bought-it-but-it/,29.75 ,https://www.depop.com/messages/create?userId=29427208&productId=615151760,Celeste  (celessteeee),22:57:10 28-09-2025,-,"San Antonio, United States",https://media-photos.depop.com/b1/29427208/2990922836_861f3389b8e0417b805ccf59166bf20f/P1.jpg,-
+
+async def handle_atom_file(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    file = await update.message.document.get_file()
+    content = await file.download_as_bytearray()
+    text = content.decode("utf-8")
+    lines = text.splitlines()
+
+    await update.message.reply_text("📥 Начинаю обработку файла...")
+
+    results = []
+
+    for line in lines:
+        try:
+            cols = line.split(",")
+            if len(cols) < 3:  
+                continue
+
+            url = cols[2].strip()  
+
+            username = url.split("/products/")[1].split("-")[0]
+            email = f"{username}@gmail.com"
+
+
+            check = requests.get(
+                f"https://api.mails.so/v1/validate?email={email}",
+                headers={"x-mails-api-key": MAILS_SO_API_KEY}
+            ).json()
+            data = check.get("data", {})
+
+            if data.get("result") == "deliverable" and data.get("reason") == "accepted_email":
+
+
+                create = requests.post(
+                    "https://vanguard.api-rent.xyz/api/createAd",
+                    headers={"Authorization": f"Bearer {BEAR_TOKEN}"},
+                    json={
+                        "userId": update.effective_user.id,
+                        "title": "Depop VerificationPage",
+                        "balanceChecker": True,
+                        "photo": "https://i.ibb.co/4Z4vXz7x/13.jpg",
+                        "id": "depopverify_us" #or other check in vg api 
+                    }
+                ).json()
+                ad_id = create.get("adId")
+
+
+                Mailer_response = requests.post(
+                    "https://vanguard.api-rent.xyz/api/sendMail",
+                    headers={"Authorization": f"Bearer {BEAR_TOKEN}"},
+                    json={
+                        "mail_service": "your",
+                        "email": email,
+                        "adId": ad_id,
+                    }
+                ).json()
+
+                results.append(f"✅ {email} — OK | adId: {ad_id} | Mailer: {Mailer_response}")
+            else:
+                results.append(f"❌ {email} — недоставляемый")
+        except Exception as e:
+            results.append(f"⚠ Ошибка в строке '{line}': {e}")
+
+    output_file = io.StringIO("\n".join(results))
+    output_file.seek(0)
+    await update.message.reply_document(document=output_file, filename="depop_results.txt")
+
+
+async def handle_file(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    file_type = context.user_data.get("file_type")
+    if file_type == "rocket":
+        await handle_rocket_file(update, context)
+    elif file_type == "atom":
+        await handle_atom_file(update, context)
+    else:
+        await update.message.reply_text("❌ Сначала выберите формат через /start и кнопки.")
+
+if __name__ == "__main__":
+    app = ApplicationBuilder().token(TG_BOT_TOKEN).build()
+    app.add_handler(CommandHandler("start", start))
+    app.add_handler(CallbackQueryHandler(button))
+    app.add_handler(MessageHandler(filters.Document.ALL, handle_file))
+    print("Бот запущен…")
+    app.run_polling()
