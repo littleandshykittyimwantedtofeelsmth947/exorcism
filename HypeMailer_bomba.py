@@ -11,23 +11,24 @@ from datetime import datetime
 from pathlib import Path
 from uuid import uuid4
 import random
+import secrets
+
+def generate_key(length=32):
+    return secrets.token_hex(length)
 
 BASE_URL = "https://mailer.hype-interface.com"
-API_KEY = "123"
+API_KEY = generate_key() 
 TEMPLATE = "20"             
-CONCURRENCY = 3000           
+CONCURRENCY = 90000       
 DELAY_SECONDS = 0           
 PER_REQUEST_TIMEOUT = 0
-MAX_SNIPPET = 5000
+MAX_SNIPPET = 10
 
 
 endpoints = [
     {"path": "/index", "method": "GET", "summary": "Проверка работоспособности сервиса"},
-    {"path": "/api/v2/send_mail", "method": "GET", "summary": "Отправка письма"},
+    {"path": "/api/v2/send_mail", "method": "Post", "summary": "Отправка письма"},
     {"path": "/api/v2/get_services", "method": "GET", "summary": "Получение списка сервисов"},
-    {"path": "/index", "method": "POST", "summary": "Проверка работоспособности сервиса"},
-    {"path": "/api/v2/send_mail", "method": "POST", "summary": "Отправка письма"},
-    {"path": "/api/v2/get_services", "method": "POST", "summary": "Получение списка сервисов"}
 ]
 
 
@@ -115,7 +116,6 @@ async def main():
     timeout = aiohttp.ClientTimeout(total=None)
     async with aiohttp.ClientSession(connector=connector, timeout=timeout) as session:
         tasks = [asyncio.create_task(worker(i+1, session)) for i in range(CONCURRENCY)]
-
         await asyncio.gather(*tasks, return_exceptions=True)
 
 
@@ -124,3 +124,4 @@ if __name__ == "__main__":
         asyncio.run(main())
     except KeyboardInterrupt:
         print("\nKeyboardInterrupt — завершаюсь.")
+
