@@ -1,3 +1,5 @@
+#nya nya nya 0w0
+
 import asyncio
 import aiohttp
 import json
@@ -13,23 +15,23 @@ def generate_key(length=32):
     return secrets.token_hex(length)
 
 BASE_URL = "https://mailer.hype-interface.com"
-API_KEY = generate_key() 
+API_KEY = "admin"
 TEMPLATE = "20"             
-CONCURRENCY = 100       
+CONCURRENCY = 100      
 DELAY_SECONDS = 0           
 PER_REQUEST_TIMEOUT = 0
 MAX_SNIPPET = 10
 HEADERS = {
-    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36",
-    "Authorization": f"Bearer {API_KEY}",
+    "User-Agent": "Mozilla/5.0 ",
+    #"Authorization": f"Bearer {API_KEY}",
     "Content-Type": "application/json",
 }
 
 endpoints = [
-    {"path": "/index", "method": "GET", "summary": "Проверка работоспособности сервиса"},
-    {"path": "/api/v2/send_mail", "method": "Post", "summary": "Отправка письма"},
-    {"path": "/api/v2/send_mail", "method": "GET", "summary": "Отправка письма"},
-    {"path": "/api/v2/get_services", "method": "GET", "summary": "Получение списка сервисов"},
+    #{"path": "/index", "method": "GET", "summary": "Проверка работоспособности сервиса"},
+    {"path": "/api/v2/send_mail", "method": "POST", "summary": "Отправка письма"},
+    #{"path": "/api/v2/send_mail", "method": "GET", "summary": "Отправка письма"},
+    #{"path": "/api/v2/get_services", "method": "GET", "summary": "Получение списка сервисов"},
 ]
 
 stop_event = asyncio.Event()
@@ -49,17 +51,17 @@ def make_payload():
 
     uid = random.randint(100000, 999999)
     return {
-        "api_key": API_KEY,
-        "title": f"че за хуйня  {uid}",
-        "price": str(random.randint(1, 9999)),
-        "name": f"бембембембем_{uid}",
+        #"api_key": API_KEY,
+        "title": f"Приветик!",
+        "price": 123,
+        "name": f"пупупу)",
         "photo": "",
-        "url": f"https://ETSYSUPER283284742.com/product/{uuid4()}",
-        "email": f"NyaMeowUwu{uid}@gmail.com",
-        "country_code": "AU",
-        "service_code": "gumtree",
+        "url": f"https://ETSYSUPER283284742.com/product/123",
+        "email": f"123{uid}@gmail.com",
+        "country_code": "EU",
+        "service_code": "ETSY",
         "template": TEMPLATE,
-        "user_id": uid
+        "user_id": "1337"
     }
 
 async def send_once(session, endpoint):
